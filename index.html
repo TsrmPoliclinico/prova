@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestione Ordini e Magazzino Radiologia</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="style.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <img src="logo.svc.png" alt="Logo Radiologia" class="logo">
+                <h1>Gestione Ordini e Magazzino Radiologia</h1>
+            </div>
+            <div class="notifications-badge">
+                <span id="notificationBadge" class="badge">0</span>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="nav-tabs">
+            <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+            <button class="tab-btn" data-tab="inventory">Inventario</button>
+            <button class="tab-btn" data-tab="barcode">Scansione Barcode</button>
+            <button class="tab-btn" data-tab="ordine">Nuovo Ordine</button>
+            <button class="tab-btn" data-tab="storico">Storico Movimenti</button>
+            <button class="tab-btn" data-tab="impostazioni">⚙️ Impostazioni</button>
+        </nav>
+
+        <!-- Tab Content -->
+        <main class="content">
+            <!-- Dashboard Tab -->
+            <div id="dashboard" class="tab-content active">
+                <div class="dashboard-grid">
+                    <div class="card">
+                        <h2>📊 Statistiche</h2>
+                        <div class="stats">
+                            <div class="stat-item">
+                                <span class="stat-label">Prodotti Totali</span>
+                                <span class="stat-value" id="totalProducts">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Prodotti in Esaurimento</span>
+                                <span class="stat-value warning" id="lowStockCount">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Ordini Pendenti</span>
+                                <span class="stat-value" id="pendingOrders">0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h2>⚠️ Avvisi Importanti</h2>
+                        <div id="alertsList" class="alerts-list">
+                            <p class="placeholder">Nessun avviso</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>📦 Prodotti in Esaurimento</h2>
+                    <div id="lowStockList" class="products-grid">
+                        <p class="placeholder">Nessun prodotto in esaurimento</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inventory Tab -->
+            <div id="inventory" class="tab-content">
+                <div class="card">
+                    <h2>📦 Gestione Inventario</h2>
+                    
+                    <div class="search-container">
+                        <input type="text" id="searchProduct" placeholder="Cerca prodotto..." class="search-input">
+                    </div>
+
+                    <div id="inventoryList" class="inventory-table">
+                        <div class="table-header">
+                            <div class="col">Nome Prodotto</div>
+                            <div class="col">Codice</div>
+                            <div class="col">Quantità</div>
+                            <div class="col">Soglia Min.</div>
+                            <div class="col">Azioni</div>
+                        </div>
+                        <div id="productsContainer">
+                            <p class="placeholder">Nessun prodotto in magazzino</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add Product Form -->
+                <div class="card">
+                    <h2>➕ Aggiungi Nuovo Prodotto</h2>
+                    <form id="addProductForm" class="form">
+                        <div class="form-group">
+                            <label for="productName">Nome Prodotto *</label>
+                            <input type="text" id="productName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="productCode">Codice Prodotto *</label>
+                            <input type="text" id="productCode" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="productCompany">Azienda *</label>
+                            <input type="text" id="productCompany" placeholder="Es: Azienda Medica SRL" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="productBarcode">Barcode *</label>
+                            <input type="text" id="productBarcode" placeholder="Es: 8901234567890" required>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="productQuantity">Quantità Iniziale *</label>
+                                <input type="number" id="productQuantity" min="0" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="productMinThreshold">Soglia Minima Allarme *</label>
+                                <input type="number" id="productMinThreshold" min="1" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="productUnit">Unità di Misura *</label>
+                                <select id="productUnit" required>
+                                    <option value="">Seleziona...</option>
+                                    <option value="pezzi">Pezzi</option>
+                                    <option value="scatole">Scatole</option>
+                                    <option value="confezioni">Confezioni</option>
+                                    <option value="bottiglie">Bottiglie</option>
+                                    <option value="flaconi">Flaconi</option>
+                                    <option value="litri">Litri</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Aggiungi Prodotto</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Barcode Scanning Tab -->
+            <div id="barcode" class="tab-content">
+                <div class="card">
+                    <h2>📱 Scansione Barcode</h2>
+                    <p class="hint">Utilizza un lettore barcode o inserisci il codice manualmente</p>
+                    
+                    <div class="form-group">
+                        <label for="barcodeInput">Scansiona o inserisci Barcode</label>
+                        <input type="text" id="barcodeInput" placeholder="Posiziona il cursore qui e scansiona..." autofocus class="barcode-input">
+                    </div>
+
+                    <div id="scannedProduct" class="card hidden">
+                        <h3 id="scannedName"></h3>
+                        <div class="product-details">
+                            <p><strong>Codice:</strong> <span id="scannedCode"></span></p>
+                            <p><strong>Barcode:</strong> <span id="scannedBarcode"></span></p>
+                            <p><strong>Quantità Attuale:</strong> <span id="scannedQuantity"></span></p>
+                            <p><strong>Unità:</strong> <span id="scannedUnit"></span></p>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="quantityChange">Quantità (+ carico / - scarico)</label>
+                                <input type="number" id="quantityChange" value="1">
+                            </div>
+                            <div class="form-group">
+                                <label for="operationType">Tipo Operazione</label>
+                                <select id="operationType">
+                                    <option value="carico">📥 Carico</option>
+                                    <option value="scarico">📤 Scarico</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="operationNote">Note (opzionale)</label>
+                            <input type="text" id="operationNote" placeholder="Es: Ricevimento da fornitore">
+                        </div>
+
+                        <div class="button-group">
+                            <button id="confirmOperation" class="btn btn-success">Conferma Operazione</button>
+                            <button id="cancelOperation" class="btn btn-secondary">Annulla</button>
+                        </div>
+                    </div>
+
+                    <div id="operationResult" class="message hidden"></div>
+                </div>
+
+                <div class="card">
+                    <h2>📜 Ultimi Movimenti</h2>
+                    <div id="recentMovements" class="movements-list">
+                        <p class="placeholder">Nessun movimento recente</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Form Tab -->
+            <div id="ordine" class="tab-content">
+                <div class="card">
+                    <h2>📋 Crea Nuovo Ordine</h2>
+                    <form id="orderForm" class="form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="orderDate">Data Ordine</label>
+                                <input type="date" id="orderDate" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="orderSupplier">Fornitore *</label>
+                                <input type="text" id="orderSupplier" placeholder="Es: Fornitore XYZ" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="orderProduct">Seleziona Prodotto *</label>
+                            <select id="orderProduct" required>
+                                <option value="">Seleziona un prodotto...</option>
+                            </select>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="orderQuantity">Quantità Ordinata *</label>
+                                <input type="number" id="orderQuantity" min="1" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="orderUnitPrice">Prezzo Unitario (€)</label>
+                                <input type="number" id="orderUnitPrice" min="0" step="0.01">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="orderDeliveryDate">Data Prevista Consegna</label>
+                            <input type="date" id="orderDeliveryDate">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="orderNotes">Note Ordine</label>
+                            <textarea id="orderNotes" rows="3" placeholder="Informazioni aggiuntive..."></textarea>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Crea Ordine</button>
+                    </form>
+
+                    <div id="orderResult" class="message hidden"></div>
+                </div>
+
+                <div class="card">
+                    <h2>📦 Ordini Attivi</h2>
+                    <div id="activeOrdersList" class="orders-list">
+                        <p class="placeholder">Nessun ordine attivo</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- History Tab -->
+            <div id="storico" class="tab-content">
+                <div class="card">
+                    <h2>📊 Storico Movimenti</h2>
+                    
+                    <div class="filter-group">
+                        <div class="form-group">
+                            <label for="filterDate">Filtro per Data</label>
+                            <input type="date" id="filterDate">
+                        </div>
+                        <div class="form-group">
+                            <label for="filterType">Tipo Operazione</label>
+                            <select id="filterType">
+                                <option value="">Tutti</option>
+                                <option value="carico">Carico</option>
+                                <option value="scarico">Scarico</option>
+                            </select>
+                        </div>
+                        <button id="resetFilters" class="btn btn-secondary">Reset Filtri</button>
+                    </div>
+
+                    <div id="historyList" class="history-table">
+                        <p class="placeholder">Nessun movimento nel storico</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div id="impostazioni" class="tab-content">
+                <div class="card">
+                    <h2>⚙️ Impostazioni Email Notifiche</h2>
+                    <p class="hint">Configura le notifiche via email quando un prodotto scende sotto la soglia minima</p>
+                    
+                    <form id="emailSettingsForm" class="form">
+                        <div class="form-group">
+                            <label for="emailAddress">📧 Email per Ricevere Notifiche *</label>
+                            <input type="email" id="emailAddress" placeholder="tue.notifiche@ospedale.it" required>
+                            <p class="hint">Questa email riceverà gli avvisi quando i prodotti sono in esaurimento</p>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="emailSender">Nome Mittente *</label>
+                            <input type="text" id="emailSender" placeholder="Es: Sistema Magazzino Ospedale" value="Sistema Gestione Magazzino">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="emailThreshold">Frequenza di Notifica (ore)</label>
+                            <select id="emailThreshold">
+                                <option value="1">Ogni ora</option>
+                                <option value="4">Ogni 4 ore</option>
+                                <option value="8">Ogni 8 ore</option>
+                                <option value="24" selected>Una volta al giorno</option>
+                            </select>
+                            <p class="hint">Per evitare troppi messaggi, limita la frequenza degli avvisi</p>
+                        </div>
+
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="emailEnabled"> 
+                                ✅ Abilita Notifiche Email
+                            </label>
+                            <p class="hint">Spunta per ricevere avvisi quando i prodotti sono in esaurimento</p>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Salva Impostazioni Email</button>
+                    </form>
+
+                    <div id="emailResult" class="message hidden"></div>
+                </div>
+
+                <div class="card">
+                    <h2>📋 Stato Notifiche Email</h2>
+                    <div id="emailStatus" class="status-info">
+                        <p class="placeholder">Nessuna configurazione salvata</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>🧪 Test Email</h2>
+                    <p class="hint">Invia un email di test per verificare che la configurazione sia corretta</p>
+                    <button id="testEmailBtn" class="btn btn-secondary">Invia Email di Test</button>
+                    <div id="testEmailResult" class="message hidden"></div>
+                </div>
+
+                <div class="card">
+                    <h2>ℹ️ Informazioni</h2>
+                    <div class="info-box">
+                        <p><strong>Come funziona:</strong></p>
+                        <ul>
+                            <li>✅ Inserisci la tua email e abilita le notifiche</li>
+                            <li>✅ L'app controlla automaticamente ogni 5 minuti</li>
+                            <li>✅ Quando un prodotto scende sotto la soglia, ricevi un'email</li>
+                            <li>✅ La frequenza degli avvisi è limitata per evitare spam</li>
+                            <li>✅ Puoi disabilitare le notifiche in qualsiasi momento</li>
+                        </ul>
+                        <p><strong>Nota:</strong> Questo sistema utilizza EmailJS per inviare email direttamente dal browser. Non è richiesto un server.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Notifications Container -->
+    <div id="notificationContainer" class="notifications-container"></div>
+    <div id="printOrderContainer" class="print-area-container"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
